@@ -10,6 +10,7 @@ import (
 
 type MultilineType int
 
+//go:generate stringer -type=MultilineType
 const (
 	None MultilineType = iota
 	Paragraph
@@ -18,6 +19,10 @@ const (
 	UnorderedList
 	OrderedList
 )
+
+func (m MultilineType) String() string {
+	return [...]string{"None", "Paragraph", "Quote", "Code", "UnorderedList", "OrderedList"}[m]
+}
 
 func check(e error) {
 	if e != nil {
@@ -70,6 +75,123 @@ func checkAndConvertHeader(mdLine string) (string, bool) {
 		}
 	}
 	return mdLine, false
+
+}
+
+type Converter struct {
+	output string
+	mType  MultilineType
+	buffer string
+}
+
+func (c *Converter) transitionToNewBlock(incomingContents string, incomingMType MultilineType) error {
+	startMType := c.mType
+
+	if startMType == incomingMType {
+		return fmt.Errorf("Calling transition between the same two mType states: %s and %s", c.mType, incomingMType)
+	}
+
+	c.output += parseInlineSyntax(c.buffer)
+
+	closingTag, ok := getClosingTag(c.mType)
+	if ok {
+		c.output += closingTag
+	}
+
+	c.mType = incomingMType
+
+	openingTag, ok := getOpeningTag(incomingMType)
+	if ok {
+		c.output += openingTag
+	}
+
+	c.buffer = incomingContents
+
+	return nil
+}
+
+func getOpeningTag(mType MultilineType) (string, bool) {
+	switch mType {
+	case Paragraph:
+		return "<p>", true
+	case Quote:
+		return "<blockquote>", true
+	default: // e.g. when transitioning into a none block (empty line)
+		return "", false
+	}
+}
+
+func getClosingTag(mType MultilineType) (string, bool) {
+	switch mType {
+	case Paragraph:
+		return "</p>", true
+	case Quote:
+		return "</blockquote>", true
+	default: // e.g. when transitioning from a none block (empty line)
+		return "", false
+	}
+}
+
+func (c *Converter) transitionToNone() {
+	if c.mType != None {
+		err := c.transitionToNewBlock("", None)
+		check(err)
+	}
+}
+
+func parseInlineSyntax(str string) string {
+	// TODO: implement inline parsing
+	return str
+}
+
+func ConvertMarkdownToHTML_V2(lines []string) string {
+
+	var c Converter = Converter{mType: None}
+	var err error
+
+	for _, line := range lines {
+
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "" {
+			c.transitionToNone()
+			continue
+		}
+
+		if trimmed == "---" {
+
+			c.transitionToNone()
+			c.output += "<hr>"
+			continue
+		}
+
+		headerHTMLElement, isHeader := checkAndConvertHeader(trimmed)
+		if isHeader {
+			c.transitionToNone()
+			c.output += headerHTMLElement
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "> ") {
+
+			if c.mType != Quote {
+				err = c.transitionToNewBlock(strings.TrimSpace(strings.TrimPrefix(trimmed, "> ")), Quote)
+				check(err)
+			} else {
+				c.buffer += " " + trimmed
+			}
+			continue
+		}
+
+		if c.mType == None {
+			c.transitionToNewBlock(trimmed, Paragraph)
+		} else {
+			c.buffer += " " + trimmed
+		}
+
+	}
+
+	return c.output
 
 }
 
@@ -168,7 +290,7 @@ func main() {
 
 	mdLines, err := readMarkdown(inputPath)
 	check(err)
-	htmlText := convertMarkdownToHTML(mdLines)
+	htmlText := ConvertMarkdownToHTML_V2(mdLines)
 
 	fullHtml := wrapWithHTMLBoilerplate(htmlText, "")
 
