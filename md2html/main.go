@@ -173,12 +173,13 @@ func ConvertMarkdownToHTML_V2(lines []string) string {
 		}
 
 		if strings.HasPrefix(trimmed, "> ") {
-
+			withoutPrefix := strings.TrimSpace(strings.TrimPrefix(trimmed, "> "))
 			if c.mType != Quote {
-				err = c.transitionToNewBlock(strings.TrimSpace(strings.TrimPrefix(trimmed, "> ")), Quote)
+
+				err = c.transitionToNewBlock(withoutPrefix, Quote)
 				check(err)
 			} else {
-				c.buffer += " " + trimmed
+				c.buffer += " " + withoutPrefix
 			}
 			continue
 		}
