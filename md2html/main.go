@@ -139,8 +139,41 @@ func (c *Converter) transitionToNone() {
 	}
 }
 
+type DelimiterRun struct {
+	startIndex    int
+	count         int
+	leftFlanking  bool
+	rightFlanking bool
+}
+
 func parseInlineSyntax(str string) string {
 	// TODO: implement inline parsing
+
+	var delimiters []DelimiterRun
+
+	if str == "" {
+		return str
+	}
+
+	var result string = ""
+
+	for i := 0; i < len(str); i++ {
+
+		candidate := str[i]
+		var d DelimiterRun
+		if candidate == '*' {
+			d.startIndex = i
+			if i != 0 && str[i-1] != ' ' {
+				d.rightFlanking = true
+			}
+			for i < len(str); {
+
+			}
+				
+		}
+
+	}
+
 	return str
 }
 
