@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -91,7 +90,7 @@ func (c *Converter) transitionToNewBlock(incomingContents string, incomingMType 
 		return fmt.Errorf("Calling transition between the same two mType states: %s and %s", c.mType, incomingMType)
 	}
 
-	c.output += parseInlineSyntax(c.buffer)
+	// c.output += parseInlineSyntax(c.buffer)
 
 	closingTag, ok := getClosingTag(c.mType)
 	if ok {
@@ -146,16 +145,8 @@ type DelimiterRun struct {
 	rightFlanking bool
 }
 
-func parseInlineSyntax(str string) string {
-	// TODO: implement inline parsing
-
+func GetDelimiterRuns(str string) []DelimiterRun {
 	var delimiters []DelimiterRun
-
-	if str == "" {
-		return str
-	}
-
-	var result string = ""
 
 	for i := 0; i < len(str); i++ {
 
@@ -163,18 +154,58 @@ func parseInlineSyntax(str string) string {
 		var d DelimiterRun
 		if candidate == '*' {
 			d.startIndex = i
+			d.count = 1
 			if i != 0 && str[i-1] != ' ' {
 				d.rightFlanking = true
 			}
-			for i < len(str); {
+			for i+1 < len(str) {
+
+				if d.count == 3 && str[i+1] != ' ' {
+					d.leftFlanking = true
+					break
+				}
+
+				var willExit bool
+
+				switch str[i+1] {
+
+				case '*':
+					d.count++
+				case ' ':
+					willExit = true
+				default:
+					d.leftFlanking = true
+					willExit = true
+				}
+
+				if willExit {
+					break
+				}
+				i++
 
 			}
-				
+
+			if d.leftFlanking || d.rightFlanking {
+				delimiters = append(delimiters, d)
+			}
 		}
 
 	}
 
-	return str
+	return delimiters
+}
+
+func parseInlineSyntax(str string) string {
+	// TODO: implement inline parsing
+
+	if str == "" {
+		return str
+	}
+
+	// var delimiters = getDelimiterRuns(str)
+
+	var result string = ""
+	return result
 }
 
 func ConvertMarkdownToHTML_V2(lines []string) string {
@@ -313,34 +344,40 @@ func main() {
 
 	args := os.Args[1:]
 
-	if len(args) == 0 {
-		log.Fatal("no input markdown file specified")
-	}
+	result := GetDelimiterRuns(args[0])
 
-	inputPath := args[0]
-	if !strings.HasSuffix(inputPath, ".md") {
-		inputPath += ".md"
-	}
+	fmt.Println(result)
 
-	mdLines, err := readMarkdown(inputPath)
-	check(err)
-	htmlText := ConvertMarkdownToHTML_V2(mdLines)
+	// args := os.Args[1:]
 
-	fullHtml := wrapWithHTMLBoilerplate(htmlText, "")
+	// if len(args) == 0 {
+	// 	log.Fatal("no input markdown file specified")
+	// }
 
-	outputFile := "output/output.html"
-	if len(args) < 2 {
-		fmt.Println("no output file specified, defaulting to output/output.html")
-	} else {
-		outputFile = args[1]
-		if !strings.HasSuffix(outputFile, ".html") {
-			outputFile += ".html"
-		}
-	}
-	if filepath.Dir(outputFile) == "." {
-		outputFile = "output/" + outputFile
-	}
+	// inputPath := args[0]
+	// if !strings.HasSuffix(inputPath, ".md") {
+	// 	inputPath += ".md"
+	// }
 
-	err = writeHTMLToFile(fullHtml, outputFile)
-	check(err)
+	// mdLines, err := readMarkdown(inputPath)
+	// check(err)
+	// htmlText := ConvertMarkdownToHTML_V2(mdLines)
+
+	// fullHtml := wrapWithHTMLBoilerplate(htmlText, "")
+
+	// outputFile := "output/output.html"
+	// if len(args) < 2 {
+	// 	fmt.Println("no output file specified, defaulting to output/output.html")
+	// } else {
+	// 	outputFile = args[1]
+	// 	if !strings.HasSuffix(outputFile, ".html") {
+	// 		outputFile += ".html"
+	// 	}
+	// }
+	// if filepath.Dir(outputFile) == "." {
+	// 	outputFile = "output/" + outputFile
+	// }
+
+	// err = writeHTMLToFile(fullHtml, outputFile)
+	// check(err)
 }
