@@ -3,6 +3,7 @@ package tui
 import (
 	"wther/internal/weather"
 
+	"charm.land/bubbles/v2/table"
 	tea "charm.land/bubbletea/v2"
 )
 
@@ -15,7 +16,7 @@ const (
 	Success
 )
 
-type model struct {
+type Model struct {
 	err         error
 	fetchStatus FetchStatus // none, fetching, error, success
 
@@ -24,17 +25,19 @@ type model struct {
 
 	// query WeatherQuery
 	// config AppConfig
+	table table.Model
 }
 
-func NewModel() model {
-	return model{}
+func NewModel() Model {
+	return Model{}
 }
 
-func (m model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return weather.GetForecast
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 
 	// Is it a key press?
@@ -49,9 +52,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case weather.ForecastFetchedMsg:
 		m.forecast = msg.Body
+		table, err := CreateTable(msg.Body)
+		if err != nil {
+			m.err = err
+		}
+		m.table = table
 	case weather.ForecastErrMsg:
 		m.err = msg.Err
 	}
 
-	return m, nil
+	// check if applicable to table
+	m.table, cmd = m.table.Update(msg)
+
+	return m, cmd
 }
