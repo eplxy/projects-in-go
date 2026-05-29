@@ -4,32 +4,35 @@ import (
 	"wther/internal/weather"
 
 	"charm.land/bubbles/v2/table"
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 )
 
-type FetchStatus int
+type SessionState int
 
 const (
-	None FetchStatus = iota
-	Fetching
-	Error
-	Success
+	StateTable SessionState = iota
+	StateLocationInput
 )
 
 type Model struct {
-	err         error
-	fetchStatus FetchStatus // none, fetching, error, success
+	err error
 
-	forecast weather.Forecast
-	// mode ViewMode
-
+	forecast     weather.Forecast
+	state        SessionState
 	queryOptions weather.ForecastQueryOptions
 	// config AppConfig
-	table table.Model
+	table         table.Model
+	locationInput textinput.Model
 }
 
 func NewModel(queryOptions weather.ForecastQueryOptions) Model {
-	return Model{queryOptions: queryOptions}
+	locationInput := textinput.New()
+	locationInput.Placeholder = queryOptions.Location
+	locationInput.CharLimit = 100
+	locationInput.SetWidth(32)
+
+	return Model{queryOptions: queryOptions, state: StateTable, locationInput: locationInput}
 }
 
 func (m Model) Init() tea.Cmd {
@@ -38,35 +41,4 @@ func (m Model) Init() tea.Cmd {
 		// wrapped to allow passing the queryOptions
 		return weather.GetForecast(m.queryOptions)
 	}
-}
-
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-
-	// Is it a key press?
-	case tea.KeyPressMsg:
-
-		// Cool, what was the actual key pressed?
-		switch msg.String() {
-
-		// These keys should exit the program.
-		case "ctrl+c", "q":
-			return m, tea.Quit
-		}
-	case weather.ForecastFetchedMsg:
-		m.forecast = msg.Body
-		table, err := CreateTable(msg.Body)
-		if err != nil {
-			m.err = err
-		}
-		m.table = table
-	case weather.ForecastErrMsg:
-		m.err = msg.Err
-	}
-
-	// check if applicable to table
-	m.table, cmd = m.table.Update(msg)
-
-	return m, cmd
 }

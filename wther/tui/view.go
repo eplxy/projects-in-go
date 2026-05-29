@@ -30,9 +30,19 @@ func (m Model) View() tea.View {
 
 	s := "wther - what's the weather looking like?\n"
 
-	s += m.forecast.String() + "\n"
+	switch m.state {
 
-	s += tableBaseStyle.Render(m.table.View()) + "\n  " + m.table.HelpView() + "\n"
+	case StateLocationInput:
+		s += "Changing locations:\n"
+		s += m.locationInput.View() + "\n\n"
+		s += "(press enter to submit, esc to cancel)\n"
+	case StateTable:
+
+		s += m.forecast.String() + "\n"
+
+		s += tableBaseStyle.Render(m.table.View()) + "\n  " + m.table.HelpView() + "\n"
+
+	}
 
 	return tea.NewView(s)
 

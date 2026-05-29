@@ -19,8 +19,6 @@ const url = "https://charm.sh/"
 // is set at build time using -ldflags, is overridden by .env in loadApiKey()
 var VersionDefaultApiKey string
 
-var queryOptions weather.ForecastQueryOptions
-
 // overrides VersionDefaultApiKey
 func loadApiKey() error {
 
