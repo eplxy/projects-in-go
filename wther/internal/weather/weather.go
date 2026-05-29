@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"wther/internal/constants"
 
 	"net/http"
@@ -15,8 +16,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-func GetForecast() tea.Msg {
-	forecast, err := fetchForecast(ForecastQueryOptions{})
+func GetForecast(queryOptions ForecastQueryOptions) tea.Msg {
+	forecast, err := fetchForecast(queryOptions)
 	if err != nil {
 		return ForecastErrMsg{Err: err}
 	}
@@ -25,7 +26,7 @@ func GetForecast() tea.Msg {
 
 }
 
-func fetchForecast(query ForecastQueryOptions) (Forecast, error) {
+func fetchForecast(queryOptions ForecastQueryOptions) (Forecast, error) {
 
 	c := &http.Client{Timeout: 10 * time.Second}
 
@@ -36,8 +37,8 @@ func fetchForecast(query ForecastQueryOptions) (Forecast, error) {
 	apiUrl := constants.API_BASE_URL
 
 	params := url.Values{}
-	params.Set("q", "Montreal")
-	params.Set("days", "1")
+	params.Set("q", queryOptions.Location)
+	params.Set("days", strconv.Itoa(queryOptions.Days))
 	params.Set("key", os.Getenv("WEATHER_API_KEY"))
 	params.Set("aqi", "no")
 	params.Set("alerts", "no")

@@ -2,12 +2,15 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/joho/godotenv"
 
+	"wther/internal/weather"
 	"wther/tui"
 )
 
@@ -15,6 +18,8 @@ const url = "https://charm.sh/"
 
 // is set at build time using -ldflags, is overridden by .env in loadApiKey()
 var VersionDefaultApiKey string
+
+var queryOptions weather.ForecastQueryOptions
 
 // overrides VersionDefaultApiKey
 func loadApiKey() error {
@@ -35,12 +40,29 @@ func loadApiKey() error {
 }
 
 func main() {
+
+	flag.Parse()
+	args := flag.Args()
+
+	var location string
+	if len(args) == 0 {
+		// TODO setup configuration reading, for now this is defaulted to Montreal
+		location = "Montreal"
+	} else {
+		location = strings.TrimSpace(strings.Join(args, " "))
+	}
+
+	queryOptions := weather.ForecastQueryOptions{
+		Location: location,
+		Days:     1, // TODO experiment and update default, and also take flag
+	}
+
 	if err := loadApiKey(); err != nil {
 		fmt.Printf("an error has occurred: %v\n", err)
 		os.Exit(1)
 	}
 
-	if _, err := tea.NewProgram(tui.NewModel()).Run(); err != nil {
+	if _, err := tea.NewProgram(tui.NewModel(queryOptions)).Run(); err != nil {
 		fmt.Printf("an error has occurred: %v\n", err)
 		os.Exit(1)
 	}

@@ -3,6 +3,7 @@ package weather
 import (
 	"fmt"
 	"math"
+	"time"
 )
 
 type Forecast struct {
@@ -89,6 +90,9 @@ type Hour struct {
 }
 
 type ForecastQueryOptions struct {
+	Location string
+	Days     int
+	Date     time.Time
 }
 
 func (f Forecast) String() string {

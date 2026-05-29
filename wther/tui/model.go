@@ -23,17 +23,21 @@ type Model struct {
 	forecast weather.Forecast
 	// mode ViewMode
 
-	// query WeatherQuery
+	queryOptions weather.ForecastQueryOptions
 	// config AppConfig
 	table table.Model
 }
 
-func NewModel() Model {
-	return Model{}
+func NewModel(queryOptions weather.ForecastQueryOptions) Model {
+	return Model{queryOptions: queryOptions}
 }
 
 func (m Model) Init() tea.Cmd {
-	return weather.GetForecast
+
+	return func() tea.Msg {
+		// wrapped to allow passing the queryOptions
+		return weather.GetForecast(m.queryOptions)
+	}
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
