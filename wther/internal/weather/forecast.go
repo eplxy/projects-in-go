@@ -3,7 +3,6 @@ package weather
 import (
 	"fmt"
 	"math"
-	"strings"
 )
 
 type Forecast struct {
@@ -18,12 +17,6 @@ type Location struct {
 	Name    string `json:"name"`
 	Region  string `json:"region"`
 	Country string `json:"country"`
-}
-
-type Condition struct {
-	Text string `json:"text"`
-	Icon string `json:"icon"`
-	Code int    `json:"code"`
 }
 
 type WeatherReading struct {
@@ -104,7 +97,7 @@ func (f Forecast) String() string {
 		return "No weather data is currently available."
 	}
 
-	s := fmt.Sprintf("Currently in %s, it's %d and %s", f.Location.Name, int(math.Round(f.Current.TempC)), strings.ToLower(f.Current.Condition.Text))
+	s := fmt.Sprintf("Currently in %s, it's %d degrees %s", f.Location.Name, int(math.Round(f.Current.TempC)), f.Current.Condition.Phrase())
 
 	return s
 
